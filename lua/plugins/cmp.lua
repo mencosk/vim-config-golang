@@ -70,21 +70,5 @@ return {
                 })
             }
         })
-
-        local lspconfig = require("lspconfig")
-
-        -- All languages: https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
-
-        -- Default lspconfig values for Go are set by `navigator`
-        -- Go: go install golang.org/x/tools/gopls@latest
-
-        -- Python: brew install pyright
-        lspconfig["pyright"].setup {}
-
-        -- Ruby: gem install solargraph
-        lspconfig["solargraph"].setup {}
-
-        -- https://phpactor.readthedocs.io/en/master/usage/standalone.html#installation
-        lspconfig["phpactor"].setup {}
     end
 }

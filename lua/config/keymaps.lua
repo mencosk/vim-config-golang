@@ -272,3 +272,28 @@ vim.keymap.set("n", "<leader>ur", function()
   print("✅ URLs replaced!")
 end, { desc = "Replace legacy URLs", noremap = true, silent = true })
 
+
+
+-- Java
+-- Maven keymaps
+local function run_maven_command(cmd)
+  vim.cmd("TermExec cmd='mvn " .. cmd .. "'")
+end
+
+-- Common Maven commands
+vim.keymap.set("n", "<leader>mb", function() run_maven_command("clean install") end, { desc = "Maven Build" })
+vim.keymap.set("n", "<leader>mt", function() run_maven_command("test") end, { desc = "Maven Test" })
+vim.keymap.set("n", "<leader>mk", function() run_maven_command("package") end, { desc = "Maven Package" })
+vim.keymap.set("n", "<leader>mc", function() run_maven_command("clean") end, { desc = "Maven Clean" })
+vim.keymap.set("n", "<leader>mr", function() run_maven_command("spring-boot:run") end, { desc = "Maven Run (Spring Boot)" })
+vim.keymap.set("n", "<leader>mi", function() run_maven_command("clean install -DskipTests") end, { desc = "Maven Install (Skip Tests)" })
+vim.keymap.set("n", "<leader>md", function() run_maven_command("dependency:tree") end, { desc = "Maven Dependency Tree" })
+
+-- Custom Maven command
+vim.keymap.set("n", "<leader>mm", function()
+  vim.ui.input({ prompt = "Maven command: ", default = "mvn " }, function(input)
+    if input then
+      vim.cmd("TermExec cmd='" .. input .. "'")
+    end
+  end)
+end, { desc = "Maven Custom Command" })
