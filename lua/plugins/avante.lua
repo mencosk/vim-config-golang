@@ -16,7 +16,7 @@ return {
   ---@type avante.Config
   opts = {
     mode = "agentic", --agentic
-    provider = "ollama",
+    provider = "gemini",
     auto_suggestions_provider = "ollama",
     providers = {
       -- Claude provider

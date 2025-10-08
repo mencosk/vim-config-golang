@@ -9,15 +9,21 @@ return {
       require("mason-lspconfig").setup{
         ensure_installed = {
           "lua_ls",
-          "gopls"
+          "gopls",
+          "pyright",
+          "jdtls",
+          "dockerls",
+          "html",
+          "cssls",
+          "ts_ls"
         },
         handlers = {
-          function (server_name) -- default handler (optional)
-            require("lspconfig")[server_name].setup {}
+          -- Default handler using the new API
+          function (server_name, lsp)
+            lsp.setup {}
           end,
-          ["gopls"] = function()
-            local lspconfig = require("lspconfig")
-            lspconfig.gopls.setup ({
+          ["gopls"] = function(server_name, lsp)
+            lsp.setup ({
               settings = {
                 gopls = {
                   -- Code analysis settings for better diagnostics
@@ -38,16 +44,28 @@ return {
               },
               -- configure behavior when gopls attaches to a buffer
               on_attach = function(client, bufnr)
-                vim.api.nvim_create_authocmd("BufwritePre", {
-                buffer = bufnr,
-                callback = function()
-                  -- Format the whole file
-                  vim.lsp.buf.format({ timeout_ms = 2000, async = false })
-                end -- end callback
+                vim.api.nvim_create_autocmd("BufWritePre", {
+                  buffer = bufnr,
+                  callback = function()
+                    -- Format the whole file
+                    vim.lsp.buf.format({ timeout_ms = 2000, async = false })
+                  end -- end callback
                 })
               end, -- end on attach
             })
-          end -- end gopls
+          end, -- end gopls
+          ["ts_ls"] = function(server_name, lsp)
+            lsp.setup({
+              settings = {
+                typescript = {
+                  inlayHints = {
+                    includeInlayParameterNameHints = 'all',
+                    includeInlayFunctionParameterTypeHints = true,
+                  }
+                }
+              }
+            })
+          end, -- end ts_ls
         },
       }
     end -- end config
