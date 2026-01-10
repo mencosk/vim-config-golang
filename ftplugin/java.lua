@@ -105,6 +105,9 @@ local config = {
     vim.keymap.set("v", "<leader>cm", [[<ESC><CMD>lua require('jdtls').extract_method(true)<CR>]], { buffer = bufnr, desc = "Extract Method" })
     vim.keymap.set("n", "<leader>tc", jdtls.test_class, { buffer = bufnr, desc = "Test Class" })
     vim.keymap.set("n", "<leader>tm", jdtls.test_nearest_method, { buffer = bufnr, desc = "Test Method" })
+
+    -- Go to implementation
+    vim.keymap.set("n", "<leader>xi", vim.lsp.buf.implementation, { buffer = bufnr, desc = "Go to Implementation" })
   end,
 }
 
