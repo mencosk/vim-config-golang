@@ -196,42 +196,75 @@ vim.api.nvim_create_autocmd('LspAttach', {
     -- See `:help vim.lsp.*` for documentation on any of the below functions
     local opts = { buffer = ev.buf }
 
+    -- Direct LSP navigation (quick jumps)
     vim.keymap.set('n', 'gd', "<cmd>lua vim.lsp.buf.definition()<CR>", opts)
     vim.keymap.set('n', '<leader>v', "<cmd>vsplit | lua vim.lsp.buf.definition()<CR>", opts)
     vim.keymap.set('n', '<leader>s', "<cmd>belowright split | lua vim.lsp.buf.definition()<CR>", opts)
-
     vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
     vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
     vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
     vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+    vim.keymap.set('n', 'gy', vim.lsp.buf.type_definition, opts)
+
+    -- Telescope-powered LSP (better for multiple results)
+    vim.keymap.set('n', '<leader>gd', '<cmd>Telescope lsp_definitions<CR>', opts)
+    vim.keymap.set('n', '<leader>gi', '<cmd>Telescope lsp_implementations<CR>', opts)
+    vim.keymap.set('n', '<leader>gr', '<cmd>Telescope lsp_references<CR>', opts)
+    vim.keymap.set('n', '<leader>gy', '<cmd>Telescope lsp_type_definitions<CR>', opts)
+
+    -- Call hierarchy (who calls this? what does this call?)
+    vim.keymap.set('n', '<leader>ci', '<cmd>Telescope lsp_incoming_calls<CR>', opts)
+    vim.keymap.set('n', '<leader>co', '<cmd>Telescope lsp_outgoing_calls<CR>', opts)
+
+    -- Actions
     vim.keymap.set('n', '<leader>cl', vim.lsp.codelens.run, opts)
     vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
     vim.keymap.set({'n', 'v'}, '<leader>ca', vim.lsp.buf.code_action, opts)
   end,
 })
 
+-- Jump back/forward (centered)
+vim.keymap.set('n', '<C-o>', '<C-o>zz', { noremap = true, desc = "Jump back (centered)" })
+vim.keymap.set('n', '<C-i>', '<C-i>zz', { noremap = true, desc = "Jump forward (centered)" })
+
 
 
 vim.api.nvim_create_user_command("Keymaps", function()
-  local keymap_help = require("config.keybindings_help")
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(keymap_help, "\n"))
-  -- Close the window on 'q'
-  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '<cmd>bd!<CR>', { nowait = true, noremap = true, silent = true })
+  local help = require("config.keybindings_help")
+  local lines = help.get_lines()
 
-  local width = 60
-  local height = 15
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].bufhidden = "wipe"
+
+  -- Close the window on 'q' or <Esc>
+  vim.keymap.set("n", "q", "<cmd>bd!<CR>", { buffer = buf, nowait = true, silent = true })
+  vim.keymap.set("n", "<Esc>", "<cmd>bd!<CR>", { buffer = buf, nowait = true, silent = true })
+
+  -- Syntax highlighting for the buffer
+  vim.api.nvim_buf_call(buf, function()
+    vim.fn.matchadd("Title", "^┌─.*$")
+    vim.fn.matchadd("Special", "<[^>]*>")
+    vim.fn.matchadd("Special", ":[A-Z][A-Z]*")
+    vim.fn.matchadd("Delimiter", "│")
+  end)
+
+  local width = math.min(help.get_width(), vim.o.columns - 4)
+  local height = math.min(help.get_height(), vim.o.lines - 4)
+
   local opts = {
     relative = "editor",
     width = width,
     height = height,
-    col = (vim.o.columns - width) / 2,
-    row = (vim.o.lines - height) / 2,
+    col = math.floor((vim.o.columns - width) / 2),
+    row = math.floor((vim.o.lines - height) / 2),
     style = "minimal",
     border = "rounded",
-    -- adding title 
-    title = "Kevin's Keymaps Help",
-    title_pos = "center", -- options: "left", "center", "right"
+    title = " 󰌌 Kevin's Keymaps ",
+    title_pos = "center",
+    footer = " q/Esc to close ",
+    footer_pos = "center",
   }
   vim.api.nvim_open_win(buf, true, opts)
 end, {})
@@ -276,8 +309,28 @@ end, { desc = "Replace legacy URLs", noremap = true, silent = true })
 
 -- Java
 -- Maven keymaps
+-- Find the Maven project root by walking up from the current buffer or cwd
+-- to the nearest directory containing a pom.xml
+local function find_maven_root()
+  local bufdir = vim.fn.expand("%:p:h")
+  local search = (bufdir ~= "" and bufdir) or vim.fn.getcwd()
+  local current = search
+  while current and current ~= "/" do
+    if vim.fn.filereadable(current .. "/pom.xml") == 1 then
+      return current
+    end
+    current = vim.fn.fnamemodify(current, ":h")
+  end
+  return nil
+end
+
 local function run_maven_command(cmd)
-  vim.cmd("TermExec cmd='mvn " .. cmd .. "'")
+  local root = find_maven_root()
+  if root then
+    vim.cmd("TermExec cmd='mvn " .. cmd .. "' dir='" .. root .. "'")
+  else
+    vim.cmd("TermExec cmd='mvn " .. cmd .. "'")
+  end
 end
 
 -- Common Maven commands
@@ -286,6 +339,7 @@ vim.keymap.set("n", "<leader>mt", function() run_maven_command("test") end, { de
 vim.keymap.set("n", "<leader>mk", function() run_maven_command("package") end, { desc = "Maven Package" })
 vim.keymap.set("n", "<leader>mc", function() run_maven_command("clean") end, { desc = "Maven Clean" })
 vim.keymap.set("n", "<leader>mr", function() run_maven_command("spring-boot:run") end, { desc = "Maven Run (Spring Boot)" })
+vim.keymap.set("n", "<leader>mR", function() run_maven_command("compile exec:java -Dexec.mainClass=com.kmencos.ansipinblock.Application") end, { desc = "Maven Run (Java main class)" })
 vim.keymap.set("n", "<leader>mi", function() run_maven_command("clean install -DskipTests") end, { desc = "Maven Install (Skip Tests)" })
 vim.keymap.set("n", "<leader>md", function() run_maven_command("dependency:tree") end, { desc = "Maven Dependency Tree" })
 
