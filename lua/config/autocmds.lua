@@ -7,6 +7,26 @@
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
+-- Treesitter: enable highlighting and indent per filetype
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("treesitter_features", { clear = true }),
+  callback = function(args)
+    local buf = args.buf
+    if vim.bo[buf].buftype ~= "" then return end
+    local lang = vim.treesitter.language.get_lang(vim.bo[buf].filetype)
+    if not lang or not pcall(vim.treesitter.language.inspect, lang) then return end
+    if not vim.treesitter.query.get(lang, "highlights") then return end
+    pcall(vim.treesitter.start, buf)
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("treesitter_indent", { clear = true }),
+  callback = function(args)
+    vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+  end,
+})
+
 -- Run gofmt/gofmpt, import packages automatically on saved
 -- https://github.com/golang/tools/blob/master/gopls/doc/vim.md#neovim-imports
 vim.api.nvim_create_autocmd("BufWritePre", {
